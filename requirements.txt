@@ -1,0 +1,12 @@
+openai==2.52.0
+httpx==0.28.1
+mwparserfromhell==0.7.2
+rank-bm25==0.2.2
+jieba==0.42.1
+# 向量检索。ONNX Runtime 推理，不依赖 torch
+fastembed==0.8.0
+# 语音输入：麦克风采集 + 本地语音识别
+sounddevice==0.5.5
+faster-whisper==1.2.0
+# 语音输出：走 COM 调 Windows SAPI，需要 pythoncom / win32com
+pywin32==312

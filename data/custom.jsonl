@@ -1,0 +1,91 @@
+// 手写补充攻略。每行一个完整 JSON，最少只需要 title 和 text。
+// 可选字段：section（默认 Notes）、priority（默认 true）、id、url。
+// 以 // 开头的行和空行会被跳过。
+//
+// 写法建议：
+//   1. title 权重最高（建索引时重复 3 次），把任务名/人名/主题写准
+//   2. 同一个 title 单次检索最多返回 2 块，多条内容请拆成不同 title
+//   3. text 控制在 300-900 字符；中文正文里带上英文原名，中英提问都能命中
+//   4. priority=true 会让该块得分 ×1.25，确定有用的内容就设 true
+//
+// 格式示例（不参与检索，因为以 // 开头）：
+// {"title": "任务名 Wrong Side of the Tracks", "section": "补充技巧", "text": "先一句话给结论，再写具体操作、关键风险、失败常见原因。", "priority": true}
+
+
+// tags: 出口任务 / 车辆 / 收集 / 100%完成
+{"title":"Patriot出口载具获取方法","section":"技巧","text":"Patriot属于圣安地列斯出口任务第一批车辆。该车辆是一种军用越野车，耐久度较高。出口任务开启后，可以在军事区域附近、沙漠区域以及部分富人住宅区寻找。由于进入军事基地会增加通缉风险，建议优先寻找自然刷新车辆。","priority":true}
+{"title":"Sanchez出口载具获取方法","section":"技巧","text":"Sanchez属于第一批出口车辆，是越野摩托车。该车辆在乡村、公路、山区附近刷新概率较高。寻找出口车辆时，可以前往Red County、Flint County以及山区道路搜索。","priority":true}
+{"title":"Stretch出口载具获取方法","section":"技巧","text":"Stretch属于第一批出口车辆，是豪华加长轿车。通常出现在Los Santos高级住宅区、酒店、赌场以及商业区域附近。寻找时优先查看富人区停车场。","priority":true}
+{"title":"Feltzer出口载具获取方法","section":"技巧","text":"Feltzer属于第一批出口车辆，是一辆双门跑车。可以在Los Santos和San Fierro城市道路中寻找，商业区域和高级住宅区出现概率较高。","priority":false}
+{"title":"Remington出口载具获取方法","section":"技巧","text":"Remington属于第一批出口车辆，是低底盘改装车。主要在Los Santos地区出现，尤其是改装车文化浓厚的街区和停车区域。","priority":false}
+{"title":"Buffalo出口载具获取方法","section":"技巧","text":"Buffalo属于第一批出口车辆，是高性能肌肉跑车。常见于Los Santos富人区域和高速道路附近。由于速度较快，发现后应避免损坏车辆。","priority":true}
+{"title":"Sentinel出口载具获取方法","section":"技巧","text":"Sentinel属于第一批出口车辆，是豪华轿车。可以在San Fierro和Los Santos城市道路寻找，办公区和商业区附近刷新较多。","priority":false}
+{"title":"Infernus出口载具获取方法","section":"技巧","text":"Infernus属于第一批出口车辆，是游戏中的顶级跑车之一。通常出现在Las Venturas赌场区域、富人区以及高级停车场附近。","priority":true}
+{"title":"Camper出口载具获取方法","section":"技巧","text":"Camper属于第一批出口车辆，是露营车。主要在乡村、公路、山区以及偏远地区出现。寻找时建议远离城市中心。","priority":false}
+{"title":"Admiral出口载具获取方法","section":"技巧","text":"Admiral属于第一批出口车辆，是普通豪华轿车。主要在Los Santos住宅区和城市道路中刷新。","priority":false}
+
+{"title":"Slamvan出口载具获取方法","section":"技巧","text":"Slamvan属于第二批出口车辆，是低底盘改装车。通常可以在Los Santos帮派区域、改装车聚集区域找到。","priority":true}
+{"title":"Blista Compact出口载具获取方法","section":"技巧","text":"Blista Compact属于第二批出口车辆，是小型跑车。主要在城市道路、商业区域以及停车场出现。","priority":false}
+{"title":"Stafford出口载具获取方法","section":"技巧","text":"Stafford属于第二批出口车辆，是豪华老爷车。可以在高级住宅区、酒店和赌场附近寻找。","priority":true}
+{"title":"Sabre出口载具获取方法","section":"技巧","text":"Sabre属于第二批出口车辆，是经典肌肉车。主要在Los Santos城市道路和工业区域出现。","priority":false}
+{"title":"FCR-900出口载具获取方法","section":"技巧","text":"FCR-900属于第二批出口车辆，是高速摩托车。可以在城市道路、高速公路附近寻找。","priority":false}
+{"title":"Cheetah出口载具获取方法","section":"技巧","text":"Cheetah属于第二批出口车辆，是高性能跑车。主要在Las Venturas赌场区域和高级商业区附近出现。","priority":true}
+{"title":"Rancher出口载具获取方法","section":"技巧","text":"Rancher属于第二批出口车辆，是越野车。主要在乡村、山区和沙漠区域出现。","priority":false}
+{"title":"Stallion出口载具获取方法","section":"技巧","text":"Stallion属于第二批出口车辆，是敞篷肌肉车。可以在城市道路和海滩区域寻找。","priority":false}
+{"title":"Tanker出口载具获取方法","section":"技巧","text":"Tanker属于第二批出口车辆，是油罐车。主要在工业区、加油站附近以及高速公路区域出现。","priority":true}
+{"title":"Comet出口载具获取方法","section":"技巧","text":"Comet属于第二批出口车辆，是保时捷风格跑车。通常在高级区域、赌场附近和城市道路出现。","priority":true}
+
+{"title":"Blade出口载具获取方法","section":"技巧","text":"Blade属于第三批出口车辆，是低底盘改装车。主要在Los Santos地区和改装车聚集区域寻找。","priority":false}
+{"title":"Freeway出口载具获取方法","section":"技巧","text":"Freeway属于第三批出口车辆，是巡航摩托车。可以在城市道路、海滩和乡村公路寻找。","priority":false}
+{"title":"Mesa出口载具获取方法","section":"技巧","text":"Mesa属于第三批出口车辆，是越野车。主要在山区、沙漠和乡村道路出现。","priority":true}
+{"title":"ZR-350出口载具获取方法","section":"技巧","text":"ZR-350属于第三批出口车辆，是高速跑车。主要在Las Venturas和高级商业区域附近寻找。","priority":true}
+{"title":"Euros出口载具获取方法","section":"技巧","text":"Euros属于第三批出口车辆，是稀有跑车。该车辆自然刷新概率较低，建议在Las Venturas赌场区域、高级停车场附近寻找。","priority":true}
+{"title":"Banshee出口载具获取方法","section":"技巧","text":"Banshee属于第三批出口车辆，是高速跑车。主要在San Fierro、Las Venturas高级区域以及商业道路附近寻找。","priority":true}
+{"title":"Super GT出口载具获取方法","section":"技巧","text":"Super GT属于第三批出口车辆，是稀有跑车。通常出现在Las Venturas高级区域和赛车相关地点附近。","priority":true}
+{"title":"Journey出口载具获取方法","section":"技巧","text":"Journey属于第三批出口车辆，是旅行车。主要在乡村道路、山区、公路沿线出现。","priority":false}
+{"title":"Huntley出口载具获取方法","section":"技巧","text":"Huntley属于第三批出口车辆，是豪华SUV。主要在富人区、赌场区域和高级住宅附近出现。","priority":true}
+{"title":"BF Injection出口载具获取方法","section":"技巧","text":"BF Injection属于第三批出口车辆，是沙滩越野车。主要在海滩、沙漠以及乡村区域出现。","priority":true}
+
+{"title":"金门大桥加特林获取位置","section":"武器位置","text":"圣安地列斯著名隐藏武器点之一。在旧金山Kincaid Bridge（金门大桥原型）的桥梁顶部可以找到Minigun（加特林）。由于位置很高，通常需要使用喷气背包、直升机或其他方式到达。该武器属于游戏中最强大的重型武器之一。","priority":true}
+{"title":"建筑工地加特林获取位置","section":"武器位置","text":"Los Santos建筑工地附近存在免费Minigun拾取点。玩家可以通过攀爬建筑结构到达武器所在位置，是早期探索地图时获取重型武器的方法之一。","priority":true}
+{"title":"Toreno农场火箭筒获取位置","section":"武器位置","text":"Tierra Robada地区Mike Toreno农场附近可以找到免费Rocket Launcher（火箭筒）。该位置较安全，是玩家后期常用的免费火箭筒获取地点。","priority":true}
+{"title":"军事区域火箭筒获取位置","section":"武器位置","text":"Las Venturas沙漠军事区域附近可以找到Rocket Launcher等高级武器，但进入部分军事区域可能触发通缉。建议做好准备后再前往。","priority":true}
+{"title":"Grove Street附近手枪获取位置","section":"武器位置","text":"Los Santos Grove Street附近存在免费9mm手枪拾取点。游戏初期玩家可以通过探索住宅区、小巷和任务区域附近获得基础枪械。","priority":true}
+{"title":"Sweet家附近Tec-9获取位置","section":"武器位置","text":"Grove Street Sweet家附近可以找到Tec-9冲锋枪。该武器适合游戏前期使用，可以帮助玩家快速获得自动武器。","priority":true}
+{"title":"Grove Street附近AK47获取方法","section":"武器位置","text":"Los Santos Grove Street帮派区域附近可以获得AK47。除了寻找固定武器拾取点外，也可以击败敌对帮派成员获得。AK47是游戏前期非常实用的突击步枪。","priority":true}
+{"title":"乡村区域AK47获取位置","section":"武器位置","text":"Red County、Flint County等乡村区域存在AK47武器拾取点。探索乡村道路和偏僻建筑可以免费获得突击步枪。","priority":false}
+{"title":"旧金山机场M4获取位置","section":"武器位置","text":"San Fierro机场附近可以找到免费M4突击步枪。M4属于游戏中的高级突击武器，适合中后期战斗使用。","priority":true}
+{"title":"Jefferson医院狙击枪获取位置","section":"武器位置","text":"Los Santos Jefferson区域医院附近可以找到Sniper Rifle（狙击枪）。玩家需要利用建筑结构或特殊交通工具到达较高位置获取。","priority":true}
+{"title":"Vinewood影视基地狙击枪获取位置","section":"武器位置","text":"Los Santos Vinewood区域的影视基地附近存在免费狙击枪拾取点。该位置适合玩家探索城市时收集远程武器。","priority":true}
+{"title":"El Corona武士刀获取位置","section":"武器位置","text":"Los Santos El Corona区域可以找到Katana（武士刀）。该武器属于近战类隐藏武器，适合收集玩家探索地图时获取。","priority":true}
+{"title":"Chinatown武士刀获取位置","section":"武器位置","text":"San Fierro Chinatown区域存在免费武士刀拾取点。玩家探索城市街区时可以顺路收集。","priority":false}
+{"title":"Hashbury地下通道武士刀获取位置","section":"武器位置","text":"San Fierro Hashbury区域附近地下通道存在武士刀拾取点。该地点较隐蔽，是地图探索类玩家喜欢寻找的位置。","priority":true}
+{"title":"免费沙漠之鹰获取方法","section":"武器位置","text":"Desert Eagle（沙漠之鹰）属于高威力手枪，可以通过固定武器拾取点、任务奖励以及击败携带该武器的敌人获得。高级住宅区和部分特殊区域附近可能出现。","priority":true}
+{"title":"免费喷火器获取方法","section":"武器位置","text":"Flamethrower（喷火器）属于特殊武器，可以在部分特殊地点和任务区域附近获得。由于刷新位置较少，建议探索地图隐藏区域寻找。","priority":false}
+{"title":"免费微型冲锋枪获取方法","section":"武器位置","text":"Micro SMG（微型冲锋枪）可以通过探索城市区域、击败敌人以及寻找武器拾取点获得。游戏前期可以作为Tec-9之外的自动武器选择。","priority":false}
+{"title":"免费霰弹枪获取方法","section":"武器位置","text":"Shotgun（霰弹枪）可以在警察局附近、任务区域和部分建筑附近找到。近距离战斗威力较强，是容易获取的基础武器之一。","priority":false}
+{"title":"免费战斗霰弹枪获取方法","section":"武器位置","text":"Combat Shotgun（战斗霰弹枪）属于高级霰弹枪，可以通过探索固定武器点和特殊区域获得。相比普通霰弹枪射速更快。","priority":false}
+{"title":"免费RPG获取方法","section":"武器位置","text":"RPG属于重型武器，可以在军事区域、特殊建筑顶部以及部分剧情区域附近找到。获取后建议保存游戏，因为弹药较少。","priority":true}
+{"title":"开局免费武器路线","section":"技巧","text":"圣安地列斯开局推荐免费武器路线：首先在Grove Street附近收集基础武器和Tec-9，然后通过帮派战斗获得AK47。进入San Fierro后寻找M4等高级武器，后期使用喷气背包探索地图获取加特林、火箭筒等隐藏武器。","priority":true}
+{"title":"隐藏武器收集技巧","section":"技巧","text":"圣安地列斯地图中存在大量免费武器拾取点。玩家可以利用喷气背包、直升机等交通工具到达建筑顶部、桥梁顶部和隐藏区域获取高级武器。","priority":true}
+
+{"title":"Sweet家后方防弹衣位置","section":"装备位置","text":"Los Santos Grove Street区域最经典的免费防弹衣位置之一。在Sweet家后方的下水道和高架桥附近可以找到Body Armor（防弹衣）。这是游戏初期玩家最容易获得的免费护甲之一。","priority":true}
+{"title":"Los Santos机场防弹衣位置","section":"装备位置","text":"Los Santos International Airport区域存在免费Body Armor拾取点。玩家可以进入机场区域探索获取，但注意机场部分区域可能触发警察追捕。","priority":true}
+{"title":"Verdant Bluffs防弹衣位置","section":"装备位置","text":"Los Santos Verdant Bluffs区域存在隐藏防弹衣拾取点。该区域地势较高，适合探索地图时顺路获取。","priority":true}
+{"title":"Madd Dogg豪宅防弹衣位置","section":"装备位置","text":"完成相关剧情后，Madd Dogg豪宅内部可以找到Body Armor以及其他特殊装备。该地点是中后期常用装备补充点。","priority":true}
+{"title":"Los Santos会议中心防弹衣位置","section":"装备位置","text":"Los Santos Conference Center附近存在免费Body Armor拾取点。玩家探索市中心区域时可以前往寻找。","priority":false}
+{"title":"Pershing Square防弹衣位置","section":"装备位置","text":"Los Santos Pershing Square区域存在防弹衣拾取点，同时附近还有其他武器资源，是城市探索路线中的重要补给点。","priority":true}
+{"title":"Downtown Los Santos防弹衣位置","section":"装备位置","text":"Los Santos Downtown区域存在免费Body Armor。适合玩家完成任务或探索市区时补充护甲。","priority":false}
+{"title":"Las Venturas赌场区域防弹衣位置","section":"装备位置","text":"Las Venturas赌场和高级商业区域附近存在防弹衣拾取点。进入后期城市后，可以利用赌场区域作为装备补给地点。","priority":true}
+{"title":"San Fierro防弹衣位置合集","section":"装备位置","text":"San Fierro城市中多个区域存在免费Body Armor，包括工业区、商业区和特殊建筑附近。探索城市时可以寻找旋转拾取图标。","priority":false}
+{"title":"圣安地列斯生命值恢复机制","section":"技巧","text":"圣安地列斯不像早期GTA作品一样在地图大量固定放置生命值拾取物。玩家主要通过吃饭、自动售货机、存档、任务中的生命拾取以及帮派战争区域恢复生命值。","priority":true}
+{"title":"帮派战争生命恢复位置","section":"技巧","text":"进行Los Santos帮派战争时，战斗区域会生成生命值和武器拾取物。玩家可以利用这些拾取物补充血量和弹药。","priority":true}
+{"title":"CJ安全屋回血方法","section":"技巧","text":"在CJ拥有的安全屋中保存游戏可以恢复生命值。早期推荐利用Johnson House作为安全补给点。","priority":true}
+{"title":"餐厅回血方法","section":"技巧","text":"圣安地列斯中CJ可以进入Cluckin Bell、Well Stacked Pizza和Burger Shot等餐厅购买食物恢复生命值。","priority":false}
+{"title":"Grove Street警星消除位置","section":"装备位置","text":"Grove Street附近存在Police Bribe（消警星）拾取点。玩家获得通缉等级后可以寻找旋转警徽图标降低一个通缉等级。","priority":true}
+{"title":"Los Santos警星消除位置","section":"装备位置","text":"Los Santos城市区域分布多个Police Bribe拾取点。它们通常隐藏在小巷、住宅区和建筑物附近，可以降低当前通缉等级。","priority":false}
+{"title":"San Fierro警星消除位置","section":"装备位置","text":"San Fierro城市区域存在多个Police Bribe点。探索城市道路和偏僻角落可以找到降低通缉等级的隐藏警徽。","priority":false}
+{"title":"Las Venturas警星消除位置","section":"装备位置","text":"Las Venturas赌场区、住宅区和沙漠道路附近存在Police Bribe拾取点。适合玩家进行赌场任务或沙漠行动后快速消除通缉。","priority":true}
+{"title":"警星消除机制说明","section":"技巧","text":"Police Bribe表现为旋转的警徽图标，拾取后可以降低1级Wanted Level。玩家可以利用多个消警星连续降低通缉等级。","priority":true}
+{"title":"圣安地列斯开局装备路线","section":"技巧","text":"游戏初期推荐装备路线：先在Grove Street附近获取防弹衣，然后寻找Tec-9和9mm手枪，再通过帮派战斗获得AK47。这样可以在不花钱的情况下快速提升战斗能力。","priority":true}
+{"title":"圣安地列斯探索补给路线","section":"技巧","text":"探索地图时建议优先寻找防弹衣、免费武器和Police Bribe。防弹衣可以减少战斗损失，Police Bribe可以降低通缉风险，适合完成收集和探索任务。","priority":true}
