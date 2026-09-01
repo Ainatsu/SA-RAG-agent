@@ -114,6 +114,7 @@ service\start.bat
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
 | `DEEPSEEK_API_KEY` | 无 | DeepSeek API 密钥 |
+| `SA_AGENT_ORCHESTRATOR` | `legacy` | 问答编排器，可设为 `langgraph` 启用 LangGraph 图 |
 | `SA_WAKE` | `1` | 设为 `0` 关闭“小龟J”唤醒监听 |
 | `SA_WHISPER_MODEL` | `small` | 提问语音识别模型 |
 | `SA_WHISPER_DEVICE` | `cpu` | Whisper 推理设备 |
