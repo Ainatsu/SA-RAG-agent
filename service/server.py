@@ -63,6 +63,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import speech
 import voice
 from rag.pipeline import Pipeline, load_env
+from session import SessionManager
+from voice_runtime import Mic as VoiceMic, VoiceRuntime
 
 HOST = "127.0.0.1"
 PORT = 51678
@@ -85,6 +87,8 @@ log = logging.getLogger("sa-agent")
 
 # 全局单例：索引构建耗时，只做一次
 pipeline: Pipeline | None = None
+agent_runtime = None
+session = SessionManager()
 
 # 唤醒词监听是全局的，不挂在某条连接上：它得在覆盖层没连上时也能工作。
 # 已连接的覆盖层记在这里，用于把 HUD 提示广播出去。
@@ -98,6 +102,7 @@ latest_pickups: list[dict] = []
 prev_state: dict | None = None
 # 告警冷却：避免短时间内重复播报同一事件
 last_alert_time: dict[str, float] = {}
+event_runtime = None
 # 对话占用标志。录音、生成、朗读期间置位，事件告警见到就让路
 dialog_busy = False
 # 唤醒词监听器，朗读期间需要挂起它。模型就绪后建好，开麦另由 wake_sync 决定
@@ -153,17 +158,13 @@ async def wake_sync() -> None:
     stop() 要 join 监听线程（最多 3 秒）、start() 要打开输入设备，两个都不算快，
     放到线程里做，别卡住事件循环。
     """
-    if wake_listener is None:
-        return          # 唤醒词没启用，或者识别模型还没就绪
-
-    if game_active and not wake_listener.active:
-        try:
-            await asyncio.to_thread(wake_listener.start)
-        except Exception as e:
+    try:
+        await VoiceRuntime.sync_wake(game_active, wake_listener)
+    except Exception as e:
+        if game_active:
             log.warning("唤醒监听开麦失败（按住鼠标侧键说话仍可用）: %s", e)
-    elif not game_active and wake_listener.active:
-        await asyncio.to_thread(wake_listener.stop)
-        log.info("唤醒监听已停止，麦克风已释放")
+        else:
+            raise
 
 
 async def mark_game_active() -> None:
@@ -180,7 +181,7 @@ async def mark_game_active() -> None:
 
 async def mark_game_idle(reason: str) -> None:
     """游戏不在进行中了：关麦，并丢掉只对刚结束那段游戏有意义的缓存。"""
-    global game_active, prev_state, latest_state, latest_pickups
+    global game_active, prev_state, latest_state, latest_pickups, event_runtime
 
     if not game_active:
         return
@@ -190,8 +191,11 @@ async def mark_game_idle(reason: str) -> None:
     # 差分基线和拾取物清单描述的都是上一段游戏，留着只会喂出错的数据：
     # 换个存档进来，missions_passed 一变就会误报一句"任务通过"。
     prev_state = None
+    if event_runtime is not None:
+        event_runtime.reset()
     latest_state = None
     latest_pickups = []
+    session.clear()
 
     await wake_sync()
 
@@ -208,7 +212,7 @@ async def game_watchdog() -> None:
             await mark_game_idle("状态帧已断流")
 
 
-class Mic:
+class _LegacyMic:
     """一条连接上的麦克风占用。
 
     唤醒监听把麦克风常开着，而"按住说话"要另开一条输入流录同一个设备。
@@ -235,6 +239,9 @@ class Mic:
         self.recorder.abort()
         self.release()
 
+
+
+Mic = VoiceMic
 
 
 def broadcast_live_status(status: str) -> None:
@@ -404,7 +411,7 @@ async def announce_event(kind: str, text: str) -> None:
         broadcast_live_status("idle")
 
 
-async def check_events(state: dict) -> None:
+async def _legacy_check_events(state: dict) -> None:
     """心跳帧到达时做一次差分检测，命中就播报。"""
     global prev_state
 
@@ -422,6 +429,21 @@ async def check_events(state: dict) -> None:
         last_alert_time[kind] = now
         await announce_event(kind, text)
         break  # 一次心跳最多播一条，避免连着念好几句
+
+
+async def check_events(state: dict) -> None:
+    """把状态帧交给事件运行时；规则和媒体适配仍由本模块提供。"""
+    global event_runtime
+    if event_runtime is None:
+        from event_runtime import EventRuntime
+
+        event_runtime = EventRuntime(
+            detector=detect_events,
+            announce=announce_event,
+            cooldown=ALERT_COOLDOWN,
+            busy=lambda: dialog_busy,
+        )
+    await event_runtime.process(state)
 
 
 def _norm_weapon(name: str) -> str:
@@ -574,7 +596,9 @@ def write_frame(writer: asyncio.StreamWriter, ftype: bytes, payload: str = "") -
     writer.write(len(body).to_bytes(4, "little") + body)
 
 
-async def generate_reply(question: str, state: dict | None, voice: bool = False):
+async def generate_reply(question: str, state: dict | None, voice: bool = False,
+                         pickups: list[dict] | None = None,
+                         waypoint: "Callable[[str], Awaitable[None]] | None" = None):
     """产出回复片段。
 
     RAG 管线是同步阻塞的（HTTP 调用 + BM25 计算），直接在事件循环里跑
@@ -587,7 +611,11 @@ async def generate_reply(question: str, state: dict | None, voice: bool = False)
 
     def worker() -> None:
         try:
-            for piece in pipeline.answer(question, state, voice=voice):
+            source = (agent_runtime.stream(question, state, voice=voice,
+                                           pickups=pickups)
+                      if agent_runtime is not None
+                      else pipeline.answer(question, state, voice=voice))
+            for piece in source:
                 q.put(piece)
         except Exception as e:
             q.put(e)
@@ -603,11 +631,18 @@ async def generate_reply(question: str, state: dict | None, voice: bool = False)
             break
         if isinstance(item, Exception):
             raise item
+        if isinstance(item, dict) and item.get("type") == "waypoint":
+            if waypoint is not None:
+                await waypoint(item["payload"])
+            continue
         yield item
 
 
-async def speak_reply(question: str, state: dict | None,
-                      status: "Callable[[str], Awaitable[None]]") -> tuple[str, bool]:
+async def _legacy_speak_reply(question: str, state: dict | None,
+                      status: "Callable[[str], Awaitable[None]]",
+                      pickups: list[dict] | None = None,
+                      waypoint: "Callable[[str], Awaitable[None]] | None" = None
+                      ) -> tuple[str, bool]:
     """生成回答并边生成边念。返回 (念出去的文本, 本轮是否走到了头)。
 
     整段生成完再念的话，玩家按完键要干等好几秒（检索 + 改写 + 生成）。
@@ -634,7 +669,8 @@ async def speak_reply(question: str, state: dict | None,
             await status("speaking")
         speech.push(text)
 
-    async for chunk in generate_reply(question, state, voice=True):
+    async for chunk in generate_reply(question, state, voice=True,
+                                      pickups=pickups, waypoint=waypoint):
         if token != speak_token:
             log.info("朗读已被新一轮打断，放弃剩下的回答")
             return "".join(parts), False
@@ -654,6 +690,19 @@ async def speak_reply(question: str, state: dict | None,
 
     await asyncio.to_thread(speech.finish)
     return "".join(parts), token == speak_token
+
+
+async def speak_reply(question: str, state: dict | None,
+                      status: "Callable[[str], Awaitable[None]]",
+                      pickups: list[dict] | None = None,
+                      waypoint: "Callable[[str], Awaitable[None]] | None" = None
+                      ) -> tuple[str, bool]:
+    token = next_speak_token()
+    return await VoiceRuntime.speak_reply(
+        question, state, status, generate_reply,
+        token_getter=lambda: speak_token, token=token,
+        pickups=pickups, waypoint=waypoint,
+    )
 
 
 async def handle_voice(writer: asyncio.StreamWriter, command: str,
@@ -748,13 +797,17 @@ async def handle_live(writer: asyncio.StreamWriter, command: str,
 
         # "最近的防弹衣在哪"命中意图时不要绕过 RAG——Wiki 语料有区域描述，
         # 实时扫描给出距离，把后者拼进问题让模型揉成一句话。
-        intent = parse_nearest_intent(question)
-        ctx = build_pickup_context(intent[0], intent[1], state) if intent else None
-        if ctx is not None:
-            await send_waypoint(writer, ctx[1])
-            question = f"{question}\n\n以下为游戏内实时扫描信息（供参考）：\n{ctx[0]}"
+        if agent_runtime is None:
+            intent = parse_nearest_intent(question)
+            ctx = build_pickup_context(intent[0], intent[1], state) if intent else None
+            if ctx is not None:
+                await send_waypoint(writer, ctx[1])
+                question = f"{question}\n\n以下为游戏内实时扫描信息（供参考）：\n{ctx[0]}"
 
-        answer, ok = await speak_reply(question, state, status)
+        answer, ok = await speak_reply(
+            question, state, status, pickups=list(latest_pickups),
+            waypoint=lambda payload: send_waypoint(writer, payload),
+        )
         log.info("实时语音回答: %s", answer)
         if ok:
             await status("idle")
@@ -786,15 +839,19 @@ async def handle_wake_question(question: str) -> None:
         # 已经由监听线程推过了，这里不重复
         broadcast_live_status("q:" + question)
 
-        intent = parse_nearest_intent(question)
-        ctx = build_pickup_context(intent[0], intent[1], latest_state) if intent else None
-        if ctx is not None:
-            await send_waypoint(None, ctx[1])
-            question = f"{question}\n\n以下为游戏内实时扫描信息（供参考）：\n{ctx[0]}"
-
         try:
-            answer, ok = await speak_reply(question, latest_state,
-                                           broadcast_status)
+            if agent_runtime is None:
+                intent = parse_nearest_intent(question)
+                ctx = build_pickup_context(intent[0], intent[1], latest_state) if intent else None
+                if ctx is not None:
+                    await send_waypoint(None, ctx[1])
+                    question = f"{question}\n\n以下为游戏内实时扫描信息（供参考）：\n{ctx[0]}"
+
+            answer, ok = await speak_reply(
+                question, latest_state, broadcast_status,
+                pickups=list(latest_pickups),
+                waypoint=lambda payload: send_waypoint(None, payload),
+            )
         except Exception:
             log.exception("唤醒提问生成回复失败")
             await asyncio.to_thread(speech.say_sync, "出了点问题，看下服务端日志。")
@@ -852,7 +909,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
 
     # 最近一次收到的玩家状态，等下一个 Q 帧取用
     pending_state: dict | None = None
-    mic = Mic()
+    mic = Mic(wake_pause, wake_resume)
     clients.add(writer)
 
     try:
@@ -865,11 +922,9 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
             ftype, payload = frame
 
             if ftype == FRAME_STATE:
-                try:
-                    pending_state = json.loads(payload) or None
-                except json.JSONDecodeError:
+                pending_state = session.update_state_payload(payload)
+                if pending_state is None and payload.strip() not in ("", "null"):
                     log.warning("状态帧不是合法 JSON，忽略: %s", payload[:200])
-                    pending_state = None
                 # 唤醒提问不走 Q 帧，取不到 pending_state，另存一份
                 latest_state = pending_state
                 # 拿得到状态就说明玩家真的在游戏里，唤醒监听据此开麦
@@ -878,11 +933,11 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 continue
 
             if ftype == FRAME_PICKUPS:
-                try:
-                    items = json.loads(payload)
-                except json.JSONDecodeError:
+                items = session.update_pickups_payload(payload)
+                if items is None:
                     log.warning("拾取物帧不是合法 JSON，忽略")
                     continue
+                latest_pickups = items
                 if isinstance(items, list):
                     # 整包覆盖：清单反映的是当前场景，攒历史只会报出已被捡走的点
                     latest_pickups = items
@@ -925,7 +980,9 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
             if state:
                 log.info("玩家状态: %s", state)
             try:
-                async for chunk in generate_reply(payload, state):
+                async for chunk in generate_reply(
+                        payload, state, pickups=list(latest_pickups),
+                        waypoint=lambda value: send_waypoint(writer, value)):
                     write_frame(writer, FRAME_TOKEN, chunk)
                     await writer.drain()
                 write_frame(writer, FRAME_DONE)
@@ -966,13 +1023,26 @@ async def main() -> None:
     #（Processing audio / VAD filter removed），会把真正有用的日志冲掉
     logging.getLogger("faster_whisper").setLevel(logging.WARNING)
 
-    global pipeline
+    global pipeline, agent_runtime
     load_env()
     try:
         pipeline = Pipeline()
     except Exception as e:
         log.error("初始化失败: %s", e)
         return
+
+    mode = os.environ.get("SA_AGENT_ORCHESTRATOR", "legacy").strip().lower()
+    if mode == "langgraph":
+        try:
+            from agent_runtime import AgentRuntime
+
+            agent_runtime = AgentRuntime(pipeline)
+            log.info("问答编排器：LangGraph")
+        except Exception:
+            agent_runtime = None
+            log.exception("LangGraph 初始化失败，退回 legacy")
+    else:
+        log.info("问答编排器：legacy（可设置 SA_AGENT_ORCHESTRATOR=langgraph）")
 
     try:
         server = await asyncio.start_server(handle_client, HOST, PORT)

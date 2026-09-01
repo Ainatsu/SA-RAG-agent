@@ -6,23 +6,18 @@
 """
 from __future__ import annotations
 
-import json
 import logging
 import os
-import re
 from collections.abc import Iterator
 from pathlib import Path
 
-from openai import OpenAI
-
+from .llm_client import LLMClient
 from .missions import mission_name
 from .retriever import Retriever
 
 log = logging.getLogger("pipeline")
 
 ROOT = Path(__file__).resolve().parent.parent
-MODEL = "deepseek-chat"
-
 REWRITE_SYS = """你是 GTA 圣安地列斯攻略助手的检索模块。
 把玩家的中文问题转成英文检索关键词，用于在英文 GTA Wiki 中检索。
 
@@ -75,15 +70,6 @@ VOICE_ANSWER_SYS = """你是《GTA：圣安地列斯》的游戏内语音助手�
 - 任务名、人名用玩家听得懂的中文叫法，不要念英文原名
 - 资料里没有就直接说“这个资料里没有”，别编
 - 玩家想知道细节，会自己呼出面板看，不用在语音里交代这句"""
-
-
-def _client() -> OpenAI:
-    key = os.environ.get("DEEPSEEK_API_KEY", "").strip()
-    if not key:
-        raise RuntimeError(
-            "未设置 DEEPSEEK_API_KEY。请在 sa-agent/.env 中配置。"
-        )
-    return OpenAI(api_key=key, base_url="https://api.deepseek.com", timeout=60)
 
 
 def describe_state(state: dict | None) -> str:
@@ -165,9 +151,11 @@ def describe_state(state: dict | None) -> str:
 
 
 class Pipeline:
-    def __init__(self, top_k: int = 5, rewrite: bool = True):
-        self.retriever = Retriever()
-        self.client = _client()
+    def __init__(self, top_k: int = 5, rewrite: bool = True,
+                 retriever: Retriever | None = None,
+                 llm_client: LLMClient | None = None):
+        self.retriever = retriever or Retriever()
+        self.llm = llm_client or LLMClient()
         self.top_k = top_k
         self.rewrite = rewrite
 
@@ -183,19 +171,9 @@ class Pipeline:
                 prompt += f"玩家当前状态：{desc}\n"
             prompt += "输出："
 
-            r = self.client.chat.completions.create(
-                model=MODEL,
-                messages=[
-                    {"role": "system", "content": REWRITE_SYS},
-                    {"role": "user", "content": prompt},
-                ],
-                max_tokens=60,
-                temperature=0,
-            )
-            text = (r.choices[0].message.content or "").strip()
-            terms = [t for t in re.split(r"[\s,，、]+", text) if t]
+            terms = self.llm.rewrite_query(prompt, REWRITE_SYS)
             log.info("查询改写: %s", " ".join(terms))
-            return terms[:12]
+            return terms
         except Exception as e:
             log.warning("查询改写失败（退回纯 BM25）: %s", e)
             return []
@@ -242,20 +220,9 @@ class Pipeline:
         if desc:
             user += "若状态与问题相关（如血量偏低、缺少弹药、属性不足），可在回答中一并提醒。"
 
-        stream = self.client.chat.completions.create(
-            model=MODEL,
-            messages=[
-                {"role": "system", "content": VOICE_ANSWER_SYS if voice else ANSWER_SYS},
-                {"role": "user", "content": user},
-            ],
-            stream=True,
-            temperature=0.3,
-            max_tokens=200 if voice else 600,
+        yield from self.llm.stream_answer(
+            user, VOICE_ANSWER_SYS if voice else ANSWER_SYS, voice=voice
         )
-        for ch in stream:
-            piece = ch.choices[0].delta.content
-            if piece:
-                yield piece
 
 
 def load_env() -> None:
